@@ -1,0 +1,105 @@
+<!-- https://www.html5rocks.com/en/tutorials/getusermedia/intro/ -->
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+      function hasGetUserMedia() {
+        return !!(navigator.mediaDevices &&
+          navigator.mediaDevices.getUserMedia);
+      }
+
+      if (hasGetUserMedia()) {
+        // Good to go!
+      } else {
+        alert('getUserMedia() is not supported by your browser');
+      }
+    </script>
+  </head>
+  <body>
+      <video autoplay></video>
+      <img id="screenshot-img" src="">
+      <canvas style="display:none;"></canvas>
+      <button id="screenshot-button">Take screenshot</button>
+
+      <script>
+        const constraints = {
+          // video: {width: {min: 1280}, height: {min: 720}}
+          video: {width: {exact: 640}, height: {exact: 480}}
+        };
+        
+        const video = document.querySelector('video');
+        
+        navigator.mediaDevices.getUserMedia(constraints).
+          then((stream) => {video.srcObject = stream});
+      </script>
+
+      
+
+      <script>
+        // const captureVideoButton =
+        //   document.querySelector('#screenshot .capture-button');
+        const screenshotButton = document.querySelector('#screenshot-button');
+        const img = document.querySelector('#screenshot-img');
+        // const video = document.querySelector('#screenshot video');
+
+        const canvas = document.createElement('canvas');
+
+        // captureVideoButton.onclick = function() {
+        //   navigator.mediaDevices.getUserMedia(constraints).
+        //     then(handleSuccess).catch(handleError);
+        // };
+
+        screenshotButton.onclick = video.onclick = function() {
+          console.log("screenshot button")
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          canvas.getContext('2d').drawImage(video, 0, 0);
+
+          img.src = canvas.toDataURL('image/png');
+          var data = canvas.toDataURL('image/png', 1);
+          // console.log(data)
+          var jsonData = {"photo": data}
+
+          baseUrl = "https://i7m4gm062l.execute-api.us-east-1.amazonaws.com/prod/"
+          $.ajax({
+              method: "POST",
+              url: baseUrl+"searchfaces",
+              data: JSON.stringify(jsonData),
+              dataType: "json",
+              contentType: "application/json",
+          })
+          .done(function( msg ) {
+            console.log( msg );
+            $.ajax({
+                method: "GET",
+                url: baseUrl+"membername?id="+msg['externalid']
+                // data: JSON.stringify(jsonData),
+                // dataType: "json",
+                // contentType: "application/json",
+            })
+            .done(function( msg ) {
+              console.log(msg)
+              var audioElement = document.createElement('audio');
+              audioElement.setAttribute('src', msg['audioFile'])
+              audioElement.play();
+              // var audioElement = document.createElement('audio');
+              // audioElement.setAttribute('src', msg['audioFile'])
+              // audioElement.play();
+              // displayOptions();
+            })
+            .fail(function( msg ) {
+              console.log("ERROR: error found finding name")
+              console.log( msg );
+            })
+            
+          })
+          .fail(function( msg ) {
+            console.log("ERROR: error found searching faces")
+            console.log( msg );
+          });
+        };
+
+        // .
+      </script>
+  </body>
+</html>
